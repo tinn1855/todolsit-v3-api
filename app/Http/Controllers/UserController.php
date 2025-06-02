@@ -10,41 +10,20 @@ use Illuminate\Http\JsonResponse;
 class UserController extends Controller
 {
     /**
-     * Lấy danh sách tất cả users
+     * Lấy danh sách tất cả users (không phân trang, không lọc)
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
         try {
-            $query = User::query();
-
-            // Tìm kiếm theo tên hoặc email
-            if ($request->has('search')) {
-                $search = $request->get('search');
-                $query->where(function($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('username', 'like', "%{$search}%");
-                });
-            }
-
-            // Lọc theo role
-            if ($request->has('role')) {
-                $query->where('role', $request->get('role'));
-            }
-
-            // Sắp xếp
-            $sortBy = $request->get('sort_by', 'created_at');
-            $sortDirection = $request->get('sort_direction', 'desc');
-            $query->orderBy($sortBy, $sortDirection);
-
-            // Phân trang
-            $perPage = $request->get('per_page', 15);
-            $users = $query->paginate($perPage);
+            $users = User::select('id', 'username', 'email', 'full_name', 'role', 'created_at')
+                         ->orderBy('created_at', 'desc')
+                         ->get();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Lấy danh sách users thành công',
-                'data' => $users
+                'data' => $users,
+                'count' => $users->count()
             ]);
 
         } catch (\Exception $e) {
@@ -80,32 +59,6 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi lấy thông tin user',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Lấy danh sách users có phân trang đơn giản
-     */
-    public function getAllUsers(): JsonResponse
-    {
-        try {
-            $users = User::select('id', 'username', 'email', 'full_name', 'role', 'created_at')
-                         ->orderBy('created_at', 'desc')
-                         ->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Lấy danh sách users thành công',
-                'data' => $users,
-                'count' => $users->count()
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi lấy danh sách users',
                 'error' => $e->getMessage()
             ], 500);
         }
